@@ -30,11 +30,11 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-      # Google Fonts (optional, for fixing Noto font error)
-  google_fonts: ^6.2.1
+  just_audio: ^0.9.42   # Google Fonts (optional, for fixing Noto font error)
+
 
   # Just Audio (better than audioplayers for TTS playback)
-  just_audio: ^0.9.42
+  
   
 
   # The following adds the Cupertino Icons font to your application.

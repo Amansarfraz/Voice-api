@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+
+import 'dart:html' as html; // Web ke liye
 
 class TtsScreen extends StatefulWidget {
   const TtsScreen({super.key});
@@ -11,39 +13,51 @@ class TtsScreen extends StatefulWidget {
 
 class _TtsScreenState extends State<TtsScreen> {
   final TextEditingController _controller = TextEditingController();
-  final AudioPlayer _player = AudioPlayer();
-  bool _isPlaying = false;
+  String selectedVoice = "male";
+  bool isPlaying = false;
 
-  Future<void> _speak() async {
+  final AudioPlayer _audioPlayer = AudioPlayer();
+
+  Future<void> _playTts() async {
     final text = _controller.text.trim();
     if (text.isEmpty) return;
 
-    // ✅ Pollinations API (try forcing mp3 format)
     final url =
-        "https://text.pollinations.ai/$text?model=openai-audio&voice=male&format=mp3";
+        "https://text.pollinations.ai/${Uri.encodeComponent(text)}?model=openai-audio&voice=$selectedVoice&format=mp3";
 
-    try {
-      await _player.setUrl(url); // load audio
-      await _player.play(); // play audio
-      setState(() => _isPlaying = true);
+    setState(() => isPlaying = true);
 
-      _player.playerStateStream.listen((state) {
-        if (state.processingState == ProcessingState.completed) {
-          setState(() => _isPlaying = false);
-        }
+    if (kIsWeb) {
+      // Web ke liye
+      final audio = html.AudioElement(url)
+        ..autoplay = true
+        ..controls = false;
+      html.document.body?.append(audio);
+
+      audio.onEnded.listen((event) {
+        setState(() => isPlaying = false);
       });
-    } catch (e) {
-      debugPrint("Playback error: $e");
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("❌ Audio format not supported: $e")),
-      );
+    } else {
+      // Android/iOS ke liye
+      try {
+        await _audioPlayer.setUrl(url);
+        await _audioPlayer.play();
+        _audioPlayer.playerStateStream.listen((state) {
+          if (state.processingState == ProcessingState.completed) {
+            setState(() => isPlaying = false);
+          }
+        });
+      } catch (e) {
+        debugPrint("Playback error: $e");
+        setState(() => isPlaying = false);
+      }
     }
   }
 
   @override
   void dispose() {
     _controller.dispose();
-    _player.dispose();
+    _audioPlayer.dispose();
     super.dispose();
   }
 
@@ -52,42 +66,71 @@ class _TtsScreenState extends State<TtsScreen> {
     return Scaffold(
       backgroundColor: Colors.deepPurple.shade50,
       appBar: AppBar(
-        title: Text(
-          "Pollinations TTS",
-          style: GoogleFonts.notoSans(fontWeight: FontWeight.bold),
-        ),
+        title: const Text("AI Text to Speech"),
         backgroundColor: Colors.deepPurple,
+        centerTitle: true,
       ),
       body: Padding(
-        padding: const EdgeInsets.all(20.0),
+        padding: const EdgeInsets.all(20),
         child: Column(
           children: [
+            // Text Input
             TextField(
               controller: _controller,
               decoration: InputDecoration(
-                hintText: "Type something to speak...",
+                labelText: "Enter text to speak",
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
-                prefixIcon: const Icon(Icons.text_fields),
+                filled: true,
+                fillColor: Colors.white,
               ),
+              maxLines: 3,
+            ),
+            const SizedBox(height: 16),
+
+            // Voice Selector
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Text(
+                  "Select Voice: ",
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                ),
+                DropdownButton<String>(
+                  value: selectedVoice,
+                  items: const [
+                    DropdownMenuItem(value: "male", child: Text("Male")),
+                    DropdownMenuItem(value: "female", child: Text("Female")),
+                  ],
+                  onChanged: (val) {
+                    setState(() {
+                      selectedVoice = val!;
+                    });
+                  },
+                ),
+              ],
             ),
             const SizedBox(height: 20),
+
+            // Play Button
             ElevatedButton.icon(
+              onPressed: _playTts,
+              icon: Icon(isPlaying ? Icons.stop : Icons.play_arrow),
+              label: Text(
+                isPlaying ? "Playing..." : "Speak",
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.deepPurple,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(
-                  vertical: 14,
-                  horizontal: 24,
-                ),
+                minimumSize: const Size(double.infinity, 50),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              onPressed: _speak,
-              icon: Icon(_isPlaying ? Icons.stop : Icons.play_arrow),
-              label: Text(_isPlaying ? "Playing..." : "Speak"),
             ),
           ],
         ),
