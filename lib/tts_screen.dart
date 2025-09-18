@@ -13,10 +13,39 @@ class TtsScreen extends StatefulWidget {
 
 class _TtsScreenState extends State<TtsScreen> {
   final TextEditingController _controller = TextEditingController();
-  String selectedVoice = "male";
+  String selectedVoice = "alloy"; // default voice
   bool isPlaying = false;
 
   final AudioPlayer _audioPlayer = AudioPlayer();
+
+  // ✅ Supported Voices (Pollinations API ke according)
+  final List<String> voices = [
+    "alloy",
+    "echo",
+    "fable",
+    "onyx",
+    "nova",
+    "shimmer",
+    "coral",
+    "verse",
+    "ballad",
+    "ash",
+    "sage",
+    "marin",
+    "cedar",
+    "amuch",
+    "aster",
+    "brook",
+    "clover",
+    "dan",
+    "elan",
+    "marilyn",
+    "meadow",
+    "jazz",
+    "rio",
+    "megan-wetherall",
+    "jade-hardy",
+  ];
 
   Future<void> _playTts() async {
     final text = _controller.text.trim();
@@ -28,7 +57,7 @@ class _TtsScreenState extends State<TtsScreen> {
     setState(() => isPlaying = true);
 
     if (kIsWeb) {
-      // Web ke liye
+      // ✅ Web playback using HTML AudioElement
       final audio = html.AudioElement(url)
         ..autoplay = true
         ..controls = false;
@@ -38,7 +67,7 @@ class _TtsScreenState extends State<TtsScreen> {
         setState(() => isPlaying = false);
       });
     } else {
-      // Android/iOS ke liye
+      // ✅ Android/iOS playback using just_audio
       try {
         await _audioPlayer.setUrl(url);
         await _audioPlayer.play();
@@ -74,7 +103,7 @@ class _TtsScreenState extends State<TtsScreen> {
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            // Text Input
+            // 📝 Text Input
             TextField(
               controller: _controller,
               decoration: InputDecoration(
@@ -89,7 +118,7 @@ class _TtsScreenState extends State<TtsScreen> {
             ),
             const SizedBox(height: 16),
 
-            // Voice Selector
+            // 🎤 Voice Selector
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -97,23 +126,34 @@ class _TtsScreenState extends State<TtsScreen> {
                   "Select Voice: ",
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                 ),
-                DropdownButton<String>(
-                  value: selectedVoice,
-                  items: const [
-                    DropdownMenuItem(value: "male", child: Text("Male")),
-                    DropdownMenuItem(value: "female", child: Text("Female")),
-                  ],
-                  onChanged: (val) {
-                    setState(() {
-                      selectedVoice = val!;
-                    });
-                  },
+                const SizedBox(width: 12),
+                Expanded(
+                  child: DropdownButtonFormField<String>(
+                    value: selectedVoice,
+                    items: voices
+                        .map((v) => DropdownMenuItem(value: v, child: Text(v)))
+                        .toList(),
+                    onChanged: (val) {
+                      setState(() {
+                        selectedVoice = val!;
+                      });
+                    },
+                    decoration: InputDecoration(
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                    ),
+                  ),
                 ),
               ],
             ),
             const SizedBox(height: 20),
 
-            // Play Button
+            // ▶️ Play Button
             ElevatedButton.icon(
               onPressed: _playTts,
               icon: Icon(isPlaying ? Icons.stop : Icons.play_arrow),
@@ -122,7 +162,6 @@ class _TtsScreenState extends State<TtsScreen> {
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: Colors.black,
                 ),
               ),
               style: ElevatedButton.styleFrom(
