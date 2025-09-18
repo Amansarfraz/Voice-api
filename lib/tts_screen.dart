@@ -24,11 +24,22 @@ class _TtsScreenState extends State<TtsScreen> {
 
     setState(() => isPlaying = true);
 
-    await _audioPlayer.play(UrlSource(url));
-
-    _audioPlayer.onPlayerComplete.listen((event) {
+    try {
+      await _audioPlayer.play(UrlSource(url));
+      _audioPlayer.onPlayerComplete.listen((event) {
+        setState(() => isPlaying = false);
+      });
+    } catch (e) {
       setState(() => isPlaying = false);
-    });
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("⚠️ Error: $e")));
+    }
+  }
+
+  Future<void> _stopTts() async {
+    await _audioPlayer.stop();
+    setState(() => isPlaying = false);
   }
 
   @override
@@ -61,6 +72,10 @@ class _TtsScreenState extends State<TtsScreen> {
                 ),
                 filled: true,
                 fillColor: Colors.white,
+                suffixIcon: IconButton(
+                  icon: const Icon(Icons.clear),
+                  onPressed: () => _controller.clear(),
+                ),
               ),
               maxLines: 3,
             ),
@@ -90,12 +105,12 @@ class _TtsScreenState extends State<TtsScreen> {
             ),
             const SizedBox(height: 20),
 
-            // Play Button
+            // Play / Stop Button
             ElevatedButton.icon(
-              onPressed: _playTts,
+              onPressed: isPlaying ? _stopTts : _playTts,
               icon: Icon(isPlaying ? Icons.stop : Icons.play_arrow),
               label: Text(
-                isPlaying ? "Playing..." : "Generate Speech",
+                isPlaying ? "Stop" : "Generate Speech",
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
@@ -109,6 +124,11 @@ class _TtsScreenState extends State<TtsScreen> {
                 ),
               ),
             ),
+
+            if (isPlaying) ...[
+              const SizedBox(height: 20),
+              const CircularProgressIndicator(),
+            ],
           ],
         ),
       ),
