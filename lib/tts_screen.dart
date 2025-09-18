@@ -122,6 +122,7 @@ class _TtsScreenState extends State<TtsScreen> {
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
+                  color: Colors.black,
                 ),
               ),
               style: ElevatedButton.styleFrom(
