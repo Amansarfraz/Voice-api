@@ -12,8 +12,6 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'AI Text to Speech',
-      theme: ThemeData(primarySwatch: Colors.deepPurple),
       home: const TtsScreen(),
     );
   }
